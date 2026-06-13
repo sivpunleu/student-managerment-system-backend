@@ -1,0 +1,25 @@
+# Backend
+.env.deploy
+backend/node_modules/
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/coverage/
+backend/npm-debug.log*
+
+# Flutter
+student_management_app/.dart_tool/
+student_management_app/.flutter-plugins-dependencies
+student_management_app/build/
+student_management_app/.idea/
+student_management_app/*.iml
+student_management_app/android/.gradle/
+student_management_app/android/key.properties
+student_management_app/android/*.jks
+student_management_app/android/*.keystore
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

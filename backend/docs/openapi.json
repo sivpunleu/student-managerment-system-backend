@@ -1,0 +1,210 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Student Management API",
+    "version": "1.1.0",
+    "description": "JWT-authenticated REST API for students, attendance, notes, and tasks."
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local development" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "Credentials": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 8 }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "required": ["studentId", "fullName", "email", "department"],
+        "properties": {
+          "studentId": { "type": "string" },
+          "fullName": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "department": { "type": "string" },
+          "gender": { "type": "string", "enum": ["Male", "Female"] },
+          "phone": { "type": "string" },
+          "year": { "type": "integer", "minimum": 1, "maximum": 6 }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "API health",
+        "responses": { "200": { "description": "Healthy" } }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a normal user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/Credentials" },
+                  {
+                    "type": "object",
+                    "required": ["fullName"],
+                    "properties": { "fullName": { "type": "string" } }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Registered with access and refresh tokens" } }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/Credentials" } }
+          }
+        },
+        "responses": { "200": { "description": "Access and refresh tokens" } }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "summary": "Rotate a refresh token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": { "refreshToken": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Rotated session" } }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Current profile" } }
+      }
+    },
+    "/api/auth/profile": {
+      "put": {
+        "summary": "Update profile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Profile updated" } }
+      }
+    },
+    "/api/auth/change-password": {
+      "put": {
+        "summary": "Change password and rotate session",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Password changed" } }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "summary": "Request a password reset token",
+        "responses": { "200": { "description": "Reset request accepted" } }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "summary": "Reset password with a reset token",
+        "responses": { "200": { "description": "Password reset and new session issued" } }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Revoke the current session",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Session revoked" } }
+      }
+    },
+    "/api/students": {
+      "get": {
+        "summary": "List students",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Paginated students" } }
+      },
+      "post": {
+        "summary": "Create student (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/Student" } }
+          }
+        },
+        "responses": { "201": { "description": "Student created" } }
+      }
+    },
+    "/api/departments": {
+      "get": {
+        "summary": "List departments",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Paginated departments" } }
+      }
+    },
+    "/api/attendances": {
+      "get": {
+        "summary": "List attendance",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Attendance records" } }
+      }
+    },
+    "/api/attendances/summary": {
+      "get": {
+        "summary": "Daily attendance summary",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Daily summary" } }
+      }
+    },
+    "/api/attendances/report": {
+      "get": {
+        "summary": "Attendance date-range report",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Daily report rows and totals" } }
+      }
+    },
+    "/api/notes": {
+      "get": {
+        "summary": "List personal notes",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Notes" } }
+      },
+      "post": {
+        "summary": "Create note",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Note created" } }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "summary": "List personal tasks",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Tasks" } }
+      },
+      "post": {
+        "summary": "Create task",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Task created" } }
+      }
+    }
+  }
+}
