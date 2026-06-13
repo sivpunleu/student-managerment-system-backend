@@ -26,7 +26,19 @@ cd student_management_app
 flutter run
 ```
 
-Android Emulator uses `http://10.0.2.2:3000` by default. For Windows or Web:
+The app uses the deployed Render API by default:
+
+```text
+https://student-management-api-fqf8.onrender.com
+```
+
+To use a local backend on Android Emulator:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+```
+
+To use a local backend on Windows or Web:
 
 ```bash
 flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3000

@@ -31,10 +31,16 @@ The API should be available on port `3000`.
 
 ## Run Flutter
 
-Android emulator uses `10.0.2.2` by default:
+The app uses the deployed Render backend by default:
+
+```text
+https://student-management-api-fqf8.onrender.com
+```
+
+To run against a local backend on the Android emulator:
 
 ```bash
-flutter run
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
 Windows or Web on the same computer:
