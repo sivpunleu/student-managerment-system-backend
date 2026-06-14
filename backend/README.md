@@ -64,6 +64,9 @@ safe way to create or reset an administrator.
 | POST | `/api/auth/reset-password` | Public | Reset password |
 | GET | `/api/auth/me` | Authenticated | Current user |
 | PUT | `/api/auth/profile` | Authenticated | Update profile |
+| PUT | `/api/auth/profile/avatar` | Authenticated | Upload profile image (JPEG/PNG/WebP, max 2 MB) |
+| DELETE | `/api/auth/profile/avatar` | Authenticated | Remove profile image |
+| GET | `/api/auth/avatar/:userId` | Public | Get profile image |
 | PUT | `/api/auth/change-password` | Authenticated | Change password |
 | POST | `/api/auth/logout` | Authenticated | Revoke session |
 | GET | `/api/students` | Authenticated | List/search students |

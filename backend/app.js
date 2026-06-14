@@ -37,6 +37,7 @@ app.use(
     },
   }),
 );
+app.use("/api/auth/profile/avatar", express.json({ limit: "3mb" }));
 app.use(express.json({ limit: "20kb" }));
 
 app.get("/", (req, res) => {

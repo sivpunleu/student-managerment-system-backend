@@ -348,6 +348,34 @@ test(
     assert.equal(profileResult.response.status, 200);
     assert.equal(profileResult.body.user.fullName, "Updated Session User");
 
+    const avatarData =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZpV0AAAAASUVORK5CYII=";
+    const avatarResult = await request("/api/auth/profile/avatar", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${refreshResult.body.accessToken}`,
+      },
+      body: JSON.stringify({ imageData: avatarData }),
+    });
+    assert.equal(avatarResult.response.status, 200);
+    assert.match(avatarResult.body.user.avatarUrl, /\/api\/auth\/avatar\//);
+
+    const avatarResponse = await fetch(
+      `${baseUrl}${avatarResult.body.user.avatarUrl}`,
+    );
+    assert.equal(avatarResponse.status, 200);
+    assert.equal(avatarResponse.headers.get("content-type"), "image/png");
+    assert.ok((await avatarResponse.arrayBuffer()).byteLength > 0);
+
+    const removeAvatarResult = await request("/api/auth/profile/avatar", {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${refreshResult.body.accessToken}`,
+      },
+    });
+    assert.equal(removeAvatarResult.response.status, 200);
+    assert.equal(removeAvatarResult.body.user.avatarUrl, null);
+
     const changePasswordResult = await request("/api/auth/change-password", {
       method: "PUT",
       headers: {

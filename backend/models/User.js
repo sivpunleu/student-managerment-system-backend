@@ -27,6 +27,21 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "user"],
       default: "user",
     },
+    avatarData: {
+      type: Buffer,
+      select: false,
+      default: null,
+    },
+    avatarContentType: {
+      type: String,
+      enum: ["image/jpeg", "image/png", "image/webp"],
+      select: false,
+      default: null,
+    },
+    avatarUpdatedAt: {
+      type: Date,
+      default: null,
+    },
     tokenVersion: {
       type: Number,
       default: 0,

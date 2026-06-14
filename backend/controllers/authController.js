@@ -14,6 +14,7 @@ const ACCESS_TOKEN_EXPIRES_IN =
   process.env.JWT_ACCESS_EXPIRES_IN || process.env.JWT_EXPIRES_IN || "1h";
 const REFRESH_TOKEN_DAYS = Number(process.env.REFRESH_TOKEN_DAYS || 30);
 const RESET_TOKEN_MINUTES = 15;
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
@@ -23,7 +24,75 @@ const serializeUser = (user) => ({
   fullName: user.fullName,
   email: user.email,
   role: user.role,
+  avatarUrl: user.avatarUpdatedAt
+    ? `/api/auth/avatar/${user._id}?v=${user.avatarUpdatedAt.getTime()}`
+    : null,
 });
+
+const detectImageContentType = (buffer) => {
+  if (
+    buffer.length >= 3 &&
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff
+  ) {
+    return "image/jpeg";
+  }
+
+  const pngSignature = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
+  if (
+    buffer.length >= pngSignature.length &&
+    buffer.subarray(0, pngSignature.length).equals(pngSignature)
+  ) {
+    return "image/png";
+  }
+
+  if (
+    buffer.length >= 12 &&
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return "image/webp";
+  }
+
+  return null;
+};
+
+const decodeAvatar = (imageData) => {
+  if (typeof imageData !== "string" || imageData.length === 0) {
+    throw createHttpError(400, "Profile image data is required");
+  }
+
+  const base64 = imageData.includes(",")
+    ? imageData.slice(imageData.indexOf(",") + 1)
+    : imageData;
+  const normalized = base64.replace(/\s/g, "");
+
+  if (
+    normalized.length === 0 ||
+    normalized.length % 4 !== 0 ||
+    !/^[A-Za-z0-9+/]*={0,2}$/.test(normalized)
+  ) {
+    throw createHttpError(400, "Profile image data is invalid");
+  }
+
+  const buffer = Buffer.from(normalized, "base64");
+  if (buffer.length === 0) {
+    throw createHttpError(400, "Profile image data is invalid");
+  }
+  if (buffer.length > MAX_AVATAR_BYTES) {
+    throw createHttpError(413, "Profile image must be 2 MB or smaller");
+  }
+
+  const contentType = detectImageContentType(buffer);
+  if (!contentType) {
+    throw createHttpError(400, "Only JPEG, PNG, and WebP images are allowed");
+  }
+
+  return { buffer, contentType };
+};
 
 const createAccessToken = (user) =>
   jwt.sign(
@@ -199,6 +268,63 @@ exports.updateProfile = async (req, res) => {
     message: "Profile updated",
     user: serializeUser(user),
   });
+};
+
+exports.updateAvatar = async (req, res) => {
+  const { buffer, contentType } = decodeAvatar(req.body.imageData);
+  const avatarUpdatedAt = new Date();
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      avatarData: buffer,
+      avatarContentType: contentType,
+      avatarUpdatedAt,
+    },
+    {
+      returnDocument: "after",
+      runValidators: true,
+    },
+  );
+
+  res.json({
+    message: "Profile image updated",
+    user: serializeUser(user),
+  });
+};
+
+exports.deleteAvatar = async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      avatarData: null,
+      avatarContentType: null,
+      avatarUpdatedAt: null,
+    },
+    { returnDocument: "after" },
+  );
+
+  res.json({
+    message: "Profile image removed",
+    user: serializeUser(user),
+  });
+};
+
+exports.getAvatar = async (req, res) => {
+  const user = await User.findById(req.params.userId).select(
+    "+avatarData +avatarContentType",
+  );
+
+  if (!user || !user.avatarData || !user.avatarContentType) {
+    throw createHttpError(404, "Profile image not found");
+  }
+
+  res.set({
+    "Content-Type": user.avatarContentType,
+    "Content-Length": user.avatarData.length,
+    "Cache-Control": "public, max-age=86400, immutable",
+  });
+  res.send(user.avatarData);
 };
 
 exports.changePassword = async (req, res) => {

@@ -110,6 +110,62 @@
         "responses": { "200": { "description": "Profile updated" } }
       }
     },
+    "/api/auth/profile/avatar": {
+      "put": {
+        "summary": "Upload a JPEG, PNG, or WebP profile image (maximum 2 MB)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["imageData"],
+                "properties": {
+                  "imageData": {
+                    "type": "string",
+                    "format": "byte"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Profile image updated" },
+          "413": { "description": "Image is larger than 2 MB" }
+        }
+      },
+      "delete": {
+        "summary": "Remove the current profile image",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Profile image removed" } }
+      }
+    },
+    "/api/auth/avatar/{userId}": {
+      "get": {
+        "summary": "Get a user's profile image",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile image",
+            "content": {
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {}
+            }
+          },
+          "404": { "description": "Profile image not found" }
+        }
+      }
+    },
     "/api/auth/change-password": {
       "put": {
         "summary": "Change password and rotate session",
