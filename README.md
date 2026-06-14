@@ -1,70 +1,51 @@
-# Student Management System
+# Student Management API
 
-This workspace contains:
+Backend repository for the Student Management application.
 
-- `backend/`: Express, MongoDB, and JWT REST API
-- `student_management_app/`: Flutter mobile, web, and desktop client
+## Technology
 
-The system includes rotating authentication sessions, encrypted Android
-storage, role-based student and attendance management, reports, offline cache,
-task reminders, Khmer/English settings, dark mode, API documentation, tests,
-and deployment configuration.
+- Node.js and Express
+- MongoDB and Mongoose
+- JWT access and refresh tokens
+- Docker and Render deployment
 
-## Start The System
-
-Start the backend:
+## Run Locally
 
 ```bash
 cd backend
+npm install
 npm run dev
 ```
 
-Run the Flutter app in another terminal:
+The API runs at `http://localhost:3000` by default.
+
+## Verify
 
 ```bash
-cd student_management_app
-flutter run
+cd backend
+npm run check
+npm test
+npm run test:integration
 ```
 
-The app uses the deployed Render API by default:
+## Deployment
+
+The root [render.yaml](render.yaml) deploys `backend/` as a Docker web service.
+Required Render environment variables:
+
+- `MONGO_URI`: MongoDB Atlas connection string
+- `CORS_ORIGIN`: `*` for mobile clients, or a comma-separated web allowlist
+
+Production API:
 
 ```text
 https://student-management-api-fqf8.onrender.com
 ```
 
-To use a local backend on Android Emulator:
+Health check:
 
-```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
+```text
+https://student-management-api-fqf8.onrender.com/api/health
 ```
 
-To use a local backend on Windows or Web:
-
-```bash
-flutter run -d windows --dart-define=API_BASE_URL=http://localhost:3000
-```
-
-See each project's README for setup, roles, API routes, and verification.
-
-## Deploy
-
-`render.yaml` deploys the backend as a Docker web service. Build the Android
-release against its HTTPS URL:
-
-Before creating the Render Blueprint:
-
-1. Push this project to a GitHub, GitLab, or Bitbucket repository.
-2. Create a MongoDB Atlas database and copy its application connection string.
-3. In Render, create a Blueprint from the repository.
-4. Enter the Atlas connection string for `MONGO_URI`.
-5. Set `CORS_ORIGIN` to `*` for the mobile-only app, or to a comma-separated
-   allowlist when a web client is deployed.
-
-The Blueprint uses Render's free web-service plan in the Singapore region.
-After deployment, verify `https://YOUR-SERVICE.onrender.com/api/health`.
-
-```bash
-cd student_management_app
-flutter build apk --release \
-  --dart-define=API_BASE_URL=https://YOUR-SERVICE.onrender.com
-```
+See [backend/README.md](backend/README.md) for API routes and payload examples.

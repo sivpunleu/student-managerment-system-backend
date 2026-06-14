@@ -1,10 +1,8 @@
 # Student Management API
 
-Backend REST API for a Flutter Student Management application. It includes
+Backend REST API for the Student Management application. It includes
 JWT authentication, role authorization, students, departments, attendance,
 personal notes, and personal tasks.
-
-The Flutter client is available in `../student_management_app`.
 
 ## Requirements
 
