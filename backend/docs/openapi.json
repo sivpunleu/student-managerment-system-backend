@@ -33,6 +33,18 @@
           "phone": { "type": "string" },
           "year": { "type": "integer", "minimum": 1, "maximum": 6 }
         }
+      },
+      "CreateStudent": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Student" },
+          {
+            "type": "object",
+            "properties": {
+              "createAccount": { "type": "boolean" },
+              "accountPassword": { "type": "string", "minLength": 8 }
+            }
+          }
+        ]
       }
     }
   },
@@ -231,10 +243,10 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": { "schema": { "$ref": "#/components/schemas/Student" } }
+            "application/json": { "schema": { "$ref": "#/components/schemas/CreateStudent" } }
           }
         },
-        "responses": { "201": { "description": "Student created" } }
+        "responses": { "201": { "description": "Student and optional login account created" } }
       }
     },
     "/api/departments": {

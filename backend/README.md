@@ -139,9 +139,15 @@ Create a student:
   "email": "dara@example.com",
   "phone": "012345678",
   "department": "MONGODB_DEPARTMENT_ID",
-  "year": 3
+  "year": 3,
+  "createAccount": true,
+  "accountPassword": "password123"
 }
 ```
+
+When `createAccount` is `true`, the API creates a `student` login account with
+the same email as the student profile. If a student login account already exists
+for that email, the profile is created and linked by email.
 
 Mark attendance:
 

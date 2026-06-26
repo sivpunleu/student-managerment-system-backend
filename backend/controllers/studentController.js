@@ -1,11 +1,15 @@
+const bcrypt = require("bcryptjs");
 const Student = require("../models/Student");
 const Department = require("../models/Department");
 const Attendance = require("../models/Attendance");
 const Note = require("../models/Note");
 const Task = require("../models/Task");
+const User = require("../models/User");
 const createHttpError = require("../utils/httpError");
 const {
   escapeRegex,
+  isValidEmail,
+  normalizeEmail,
   parsePagination,
   pickFields,
 } = require("../utils/validation");
@@ -50,6 +54,41 @@ const activityFilter = (req, studentId) => ({
   student: studentId,
   ...(req.userRole === "admin" ? {} : { createdBy: req.user._id }),
 });
+
+const validateAccountPassword = (password) => {
+  if (typeof password !== "string" || password.length < 8) {
+    throw createHttpError(
+      400,
+      "Student account password must contain at least 8 characters",
+    );
+  }
+};
+
+const ensureStudentAccount = async ({ fullName, email, password }) => {
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    const role = existingUser.role === "user" ? "student" : existingUser.role;
+    if (role !== "student") {
+      throw createHttpError(
+        409,
+        "This email already belongs to another staff or admin account",
+      );
+    }
+
+    return { user: existingUser, created: false };
+  }
+
+  validateAccountPassword(password);
+
+  const user = await User.create({
+    fullName,
+    email,
+    password: await bcrypt.hash(password, 12),
+    role: "student",
+  });
+  return { user, created: true };
+};
 
 exports.getStudents = async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
@@ -226,6 +265,8 @@ exports.createStudent = async (req, res) => {
     "department",
     "year",
   ]);
+  const createAccount = req.body.createAccount === true;
+  const accountPassword = req.body.accountPassword;
 
   if (!data.studentId || !data.fullName || !data.email || !data.department) {
     throw createHttpError(
@@ -234,11 +275,39 @@ exports.createStudent = async (req, res) => {
     );
   }
 
+  data.email = normalizeEmail(data.email);
+  if (!isValidEmail(data.email)) {
+    throw createHttpError(400, "A valid email is required");
+  }
+
   await ensureDepartmentExists(data.department);
 
-  const student = await Student.create(data);
+  const existingStudent = await Student.exists({
+    $or: [{ studentId: data.studentId }, { email: data.email }],
+  });
+  if (existingStudent) {
+    throw createHttpError(409, "Student ID or email already exists");
+  }
+
+  const student = new Student(data);
+  await student.validate();
+
+  let accountCreated = false;
+  if (createAccount) {
+    const account = await ensureStudentAccount({
+      fullName: data.fullName.trim(),
+      email: data.email,
+      password: accountPassword,
+    });
+    accountCreated = account.created;
+  }
+
+  await student.save();
   await student.populate("department", "name description");
-  res.status(201).json(student);
+  res.status(201).json({
+    ...student.toObject(),
+    accountCreated,
+  });
 };
 
 exports.updateStudent = async (req, res) => {
