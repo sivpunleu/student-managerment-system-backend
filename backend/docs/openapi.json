@@ -246,6 +246,129 @@
         "responses": { "200": { "description": "Session revoked" } }
       }
     },
+    "/api/users": {
+      "get": {
+        "summary": "List user accounts (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["admin", "staff", "student"]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "inactive"]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Paginated user accounts with linked student profiles" },
+          "403": { "description": "Admin role required" }
+        }
+      }
+    },
+    "/api/users/{id}/role": {
+      "patch": {
+        "summary": "Update a user role (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["role"],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["admin", "staff", "student"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "User role updated" } }
+      }
+    },
+    "/api/users/{id}/status": {
+      "patch": {
+        "summary": "Activate or deactivate a user account (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["isActive"],
+                "properties": {
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "User status updated" } }
+      }
+    },
+    "/api/users/{id}/reset-password": {
+      "post": {
+        "summary": "Reset a user password (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["newPassword"],
+                "properties": {
+                  "newPassword": { "type": "string", "minLength": 8 }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Password reset successfully" } }
+      }
+    },
     "/api/students": {
       "get": {
         "summary": "List students",

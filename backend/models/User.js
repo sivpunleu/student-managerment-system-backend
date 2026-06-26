@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "staff", "student", "user"],
       default: "student",
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     avatarData: {
       type: Buffer,
       select: false,

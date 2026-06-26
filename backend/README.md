@@ -79,6 +79,10 @@ maintenance.
 | GET | `/api/auth/avatar/:userId` | Public | Get profile image |
 | PUT | `/api/auth/change-password` | Authenticated | Change password |
 | POST | `/api/auth/logout` | Authenticated | Revoke session |
+| GET | `/api/users` | Admin | List Admin/Staff/Student accounts |
+| PATCH | `/api/users/:id/role` | Admin | Change account role |
+| PATCH | `/api/users/:id/status` | Admin | Activate or deactivate account |
+| POST | `/api/users/:id/reset-password` | Admin | Reset account password |
 | GET | `/api/students` | Authenticated | List/search students |
 | POST | `/api/students` | Admin | Create student |
 | GET | `/api/students/:id` | Authenticated | Student details |
@@ -109,7 +113,8 @@ maintenance.
 | GET | `/api/health` | Public | API health |
 
 List routes support `page` and `limit`. Students and departments support
-`search`. Attendance supports `student`, `status`, `from`, and `to`. Tasks
+`search`. Users support `role`, `status`, and `search`. Attendance supports
+`student`, `status`, `from`, and `to`. Tasks
 support `student`, `status`, `priority`, and `search`.
 
 Attendance dates must use `YYYY-MM-DD`. Summary accepts `date`. Report requires

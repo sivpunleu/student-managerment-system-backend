@@ -26,6 +26,7 @@ const serializeUser = (user) => ({
   fullName: user.fullName,
   email: user.email,
   role: effectiveRole(user),
+  isActive: user.isActive !== false,
   avatarUrl: user.avatarUpdatedAt
     ? `/api/auth/avatar/${user._id}?v=${user.avatarUpdatedAt.getTime()}`
     : null,
@@ -218,6 +219,9 @@ exports.login = async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password))) {
     throw createHttpError(401, "Invalid email or password");
   }
+  if (user.isActive === false) {
+    throw createHttpError(403, "Account is deactivated");
+  }
 
   const session = await issueSession(user);
   res.json({ message: "Login successful", ...session });
@@ -239,6 +243,9 @@ exports.refresh = async (req, res) => {
 
   if (!user) {
     throw createHttpError(401, "Invalid or expired refresh token");
+  }
+  if (user.isActive === false) {
+    throw createHttpError(403, "Account is deactivated");
   }
 
   const session = await issueSession(user);
