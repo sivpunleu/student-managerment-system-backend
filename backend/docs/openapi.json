@@ -416,6 +416,14 @@
       "get": {
         "summary": "List attendance",
         "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "classGroup",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Limit records to students in this class/group"
+          }
+        ],
         "responses": { "200": { "description": "Attendance records" } }
       }
     },
@@ -423,6 +431,14 @@
       "get": {
         "summary": "Daily attendance summary",
         "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "classGroup",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Limit summary to students in this class/group"
+          }
+        ],
         "responses": { "200": { "description": "Daily summary" } }
       }
     },
@@ -430,6 +446,14 @@
       "get": {
         "summary": "Attendance date-range report",
         "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "classGroup",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Limit report to students in this class/group"
+          }
+        ],
         "responses": { "200": { "description": "Daily report rows and totals" } }
       }
     },

@@ -63,6 +63,38 @@ const applyStudentScope = async (req, filter) => {
   return student;
 };
 
+const getClassGroupStudentIds = async (req) => {
+  if (!req.query.classGroup || isStudentRole(req)) {
+    return null;
+  }
+
+  if (!mongoose.isValidObjectId(req.query.classGroup)) {
+    throw createHttpError(400, "Invalid class/group ID");
+  }
+
+  return Student.find({ classGroup: req.query.classGroup }).distinct("_id");
+};
+
+const applyClassGroupScope = async (req, filter) => {
+  const studentIds = await getClassGroupStudentIds(req);
+  if (!studentIds) {
+    return null;
+  }
+
+  if (filter.student) {
+    const selectedStudentId = filter.student.toString();
+    filter.student = studentIds.some(
+      (studentId) => studentId.toString() === selectedStudentId,
+    )
+      ? filter.student
+      : { $in: [] };
+  } else {
+    filter.student = { $in: studentIds };
+  }
+
+  return studentIds;
+};
+
 const parseDateRange = (fromValue, toValue) => {
   const from = parseDateOnly(fromValue);
   const to = parseDateOnly(toValue);
@@ -119,6 +151,7 @@ exports.getAttendances = async (req, res) => {
     }
   }
 
+  await applyClassGroupScope(req, filter);
   await applyStudentScope(req, filter);
 
   const [attendances, total] = await Promise.all([
@@ -352,8 +385,14 @@ exports.getAttendanceSummary = async (req, res) => {
   }
 
   const filter = { date };
+  const classGroupStudentIds = await applyClassGroupScope(req, filter);
   const scopedStudent = await applyStudentScope(req, filter);
-  const studentCountFilter = scopedStudent ? { _id: scopedStudent._id } : {};
+  let studentCountFilter = {};
+  if (scopedStudent) {
+    studentCountFilter = { _id: scopedStudent._id };
+  } else if (classGroupStudentIds) {
+    studentCountFilter = { _id: { $in: classGroupStudentIds } };
+  }
 
   const [statusRows, totalStudents] = await Promise.all([
     Attendance.aggregate([
@@ -398,6 +437,7 @@ exports.getAttendanceReport = async (req, res) => {
     match.student = new mongoose.Types.ObjectId(req.query.student);
   }
 
+  await applyClassGroupScope(req, match);
   await applyStudentScope(req, match);
 
   const rows = await Attendance.aggregate([
@@ -456,7 +496,8 @@ exports.getAttendanceReport = async (req, res) => {
   res.json({
     from: formatDateOnly(from),
     to: formatDateOnly(to),
-    student: match.student?.toString() || null,
+    student: req.query.student || null,
+    classGroup: req.query.classGroup || null,
     totals,
     totalRecords,
     attendanceRate: calculatePercentage(

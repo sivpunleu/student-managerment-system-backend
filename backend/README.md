@@ -114,7 +114,7 @@ maintenance.
 
 List routes support `page` and `limit`. Students and departments support
 `search`. Users support `role`, `status`, and `search`. Attendance supports
-`student`, `status`, `from`, and `to`. Tasks
+`student`, `classGroup`, `status`, `from`, and `to`. Tasks
 support `student`, `status`, `priority`, and `search`.
 
 Attendance dates must use `YYYY-MM-DD`. Summary accepts `date`. Report requires
