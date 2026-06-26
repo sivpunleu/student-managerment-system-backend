@@ -1,5 +1,6 @@
 const Department = require("../models/Department");
 const Student = require("../models/Student");
+const ClassGroup = require("../models/ClassGroup");
 const createHttpError = require("../utils/httpError");
 const {
   escapeRegex,
@@ -80,14 +81,17 @@ exports.deleteDepartment = async (req, res) => {
     throw createHttpError(404, "Department not found");
   }
 
-  const students = await Student.countDocuments({ department: department._id });
+  const [students, classes] = await Promise.all([
+    Student.countDocuments({ department: department._id }),
+    ClassGroup.countDocuments({ department: department._id }),
+  ]);
 
-  if (students > 0) {
+  if (students > 0 || classes > 0) {
     const error = createHttpError(
       409,
-      "Department cannot be deleted while students are assigned to it",
+      "Department cannot be deleted while students or classes are assigned to it",
     );
-    error.details = { students };
+    error.details = { students, classes };
     throw error;
   }
 

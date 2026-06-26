@@ -29,6 +29,7 @@
           "fullName": { "type": "string" },
           "email": { "type": "string", "format": "email" },
           "department": { "type": "string" },
+          "classGroup": { "type": "string" },
           "gender": { "type": "string", "enum": ["Male", "Female"] },
           "phone": { "type": "string" },
           "year": { "type": "integer", "minimum": 1, "maximum": 6 }
@@ -45,6 +46,20 @@
             }
           }
         ]
+      },
+      "ClassGroup": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "department": { "type": "string" },
+          "year": { "type": "integer", "minimum": 1, "maximum": 6 },
+          "shift": {
+            "type": "string",
+            "enum": ["Morning", "Afternoon", "Evening", "Weekend", ""]
+          },
+          "description": { "type": "string" }
+        }
       }
     }
   },
@@ -254,6 +269,24 @@
         "summary": "List departments",
         "security": [{ "bearerAuth": [] }],
         "responses": { "200": { "description": "Paginated departments" } }
+      }
+    },
+    "/api/classes": {
+      "get": {
+        "summary": "List classes",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Paginated classes" } }
+      },
+      "post": {
+        "summary": "Create class (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ClassGroup" } }
+          }
+        },
+        "responses": { "201": { "description": "Class created" } }
       }
     },
     "/api/attendances": {

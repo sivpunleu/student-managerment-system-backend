@@ -6,6 +6,7 @@ const path = require("path");
 
 const studentRoutes = require("./routes/studentRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
+const classGroupRoutes = require("./routes/classGroupRoutes");
 const authRoutes = require("./routes/authRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const noteRoutes = require("./routes/noteRoutes");
@@ -58,6 +59,7 @@ app.use("/api/docs", express.static(path.join(__dirname, "docs")));
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/departments", departmentRoutes);
+app.use("/api/classes", classGroupRoutes);
 app.use("/api/attendances", attendanceRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/tasks", taskRoutes);

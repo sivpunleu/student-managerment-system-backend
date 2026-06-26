@@ -38,6 +38,11 @@ const studentSchema = new mongoose.Schema(
       ref: "Department",
       required: true,
     },
+    classGroup: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ClassGroup",
+      default: null,
+    },
     year: {
       type: Number,
       min: 1,
@@ -54,5 +59,6 @@ const studentSchema = new mongoose.Schema(
 );
 
 studentSchema.index({ department: 1, fullName: 1 });
+studentSchema.index({ classGroup: 1, fullName: 1 });
 
 module.exports = mongoose.model("Student", studentSchema);

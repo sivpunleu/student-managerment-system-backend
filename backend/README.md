@@ -90,6 +90,11 @@ maintenance.
 | GET | `/api/departments/:id` | Authenticated | Department details |
 | PUT | `/api/departments/:id` | Admin | Update department |
 | DELETE | `/api/departments/:id` | Admin | Delete department |
+| GET | `/api/classes` | Authenticated | List classes/groups |
+| POST | `/api/classes` | Admin | Create class/group |
+| GET | `/api/classes/:id` | Authenticated | Class/group details |
+| PUT | `/api/classes/:id` | Admin | Update class/group |
+| DELETE | `/api/classes/:id` | Admin | Delete class/group |
 | GET | `/api/attendances` | Authenticated | List attendance |
 | GET | `/api/attendances/summary` | Authenticated | Daily dashboard |
 | GET | `/api/attendances/report` | Authenticated | Date-range report |
@@ -139,6 +144,7 @@ Create a student:
   "email": "dara@example.com",
   "phone": "012345678",
   "department": "MONGODB_DEPARTMENT_ID",
+  "classGroup": "MONGODB_CLASS_ID",
   "year": 3,
   "createAccount": true,
   "accountPassword": "password123"
@@ -148,6 +154,18 @@ Create a student:
 When `createAccount` is `true`, the API creates a `student` login account with
 the same email as the student profile. If a student login account already exists
 for that email, the profile is created and linked by email.
+
+Create a class/group:
+
+```json
+{
+  "name": "IT-Y3-A",
+  "department": "MONGODB_DEPARTMENT_ID",
+  "year": 3,
+  "shift": "Morning",
+  "description": "Year 3 IT morning class"
+}
+```
 
 Mark attendance:
 

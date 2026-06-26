@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Student = require("../models/Student");
 const Department = require("../models/Department");
+const ClassGroup = require("../models/ClassGroup");
 const Attendance = require("../models/Attendance");
 const Note = require("../models/Note");
 const Task = require("../models/Task");
@@ -15,7 +16,9 @@ const {
 } = require("../utils/validation");
 
 const populateDepartment = (query) =>
-  query.populate("department", "name description");
+  query
+    .populate("department", "name description")
+    .populate("classGroup", "name department year shift description");
 
 const isStudentRole = (req) => req.userRole === "student";
 
@@ -37,6 +40,17 @@ const ensureDepartmentExists = async (departmentId) => {
   const departmentExists = await Department.exists({ _id: departmentId });
   if (!departmentExists) {
     throw createHttpError(404, "Department not found");
+  }
+};
+
+const ensureClassGroupExists = async (classGroupId) => {
+  if (!classGroupId) {
+    return;
+  }
+
+  const classGroupExists = await ClassGroup.exists({ _id: classGroupId });
+  if (!classGroupExists) {
+    throw createHttpError(404, "Class not found");
   }
 };
 
@@ -113,6 +127,10 @@ exports.getStudents = async (req, res) => {
 
   if (req.query.year) {
     filter.year = req.query.year;
+  }
+
+  if (req.query.classGroup) {
+    filter.classGroup = req.query.classGroup;
   }
 
   const [students, total] = await Promise.all([
@@ -263,6 +281,7 @@ exports.createStudent = async (req, res) => {
     "email",
     "phone",
     "department",
+    "classGroup",
     "year",
   ]);
   const createAccount = req.body.createAccount === true;
@@ -279,8 +298,12 @@ exports.createStudent = async (req, res) => {
   if (!isValidEmail(data.email)) {
     throw createHttpError(400, "A valid email is required");
   }
+  if (!data.classGroup) {
+    data.classGroup = null;
+  }
 
   await ensureDepartmentExists(data.department);
+  await ensureClassGroupExists(data.classGroup);
 
   const existingStudent = await Student.exists({
     $or: [{ studentId: data.studentId }, { email: data.email }],
@@ -318,14 +341,19 @@ exports.updateStudent = async (req, res) => {
     "email",
     "phone",
     "department",
+    "classGroup",
     "year",
   ]);
 
   if (Object.keys(updates).length === 0) {
     throw createHttpError(400, "No valid fields were provided");
   }
+  if (updates.classGroup === "") {
+    updates.classGroup = null;
+  }
 
   await ensureDepartmentExists(updates.department);
+  await ensureClassGroupExists(updates.classGroup);
 
   const student = await populateDepartment(
     Student.findByIdAndUpdate(req.params.id, updates, {
