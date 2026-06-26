@@ -32,6 +32,12 @@ personal notes, and personal tasks.
    npm run create-admin
    ```
 
+   Create staff accounts for teachers or office users when needed:
+
+   ```bash
+   npm run create-staff
+   ```
+
 5. Start the API:
 
    ```bash
@@ -50,14 +56,18 @@ Authorization: Bearer YOUR_TOKEN
 Content-Type: application/json
 ```
 
-Public registration always creates a `user`. The `create-admin` script is the
-safe way to create or reset an administrator.
+Public registration always creates a `student`. Student accounts can only
+access the student profile and attendance that match their email address.
+Admins can create staff accounts from the app Account screen. The
+`create-admin` and `create-staff` scripts are also available for setup and
+maintenance.
 
 ## API Routes
 
 | Method | Endpoint | Access | Purpose |
 | --- | --- | --- | --- |
-| POST | `/api/auth/register` | Public | Register user |
+| POST | `/api/auth/register` | Public | Register student account |
+| POST | `/api/auth/staff` | Admin | Create staff account |
 | POST | `/api/auth/login` | Public | Login |
 | POST | `/api/auth/refresh` | Public | Rotate refresh token |
 | POST | `/api/auth/forgot-password` | Public | Request reset token |

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
   register,
+  createStaff,
   login,
   refresh,
   logout,
@@ -15,7 +16,7 @@ const {
   forgotPassword,
   resetPassword,
 } = require("../controllers/authController");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, authorize } = require("../middleware/authMiddleware");
 const createRateLimiter = require("../middleware/rateLimitMiddleware");
 
 const authLimiter = createRateLimiter({
@@ -28,6 +29,7 @@ router.post("/login", authLimiter, login);
 router.post("/refresh", authLimiter, refresh);
 router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/reset-password", authLimiter, resetPassword);
+router.post("/staff", protect, authorize("admin"), createStaff);
 router.get("/avatar/:userId", getAvatar);
 router.get("/me", protect, getMe);
 router.put("/profile", protect, updateProfile);

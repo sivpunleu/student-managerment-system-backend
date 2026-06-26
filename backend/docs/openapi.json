@@ -45,7 +45,7 @@
     },
     "/api/auth/register": {
       "post": {
-        "summary": "Register a normal user",
+        "summary": "Register a student account",
         "requestBody": {
           "required": true,
           "content": {
@@ -64,6 +64,33 @@
           }
         },
         "responses": { "201": { "description": "Registered with access and refresh tokens" } }
+      }
+    },
+    "/api/auth/staff": {
+      "post": {
+        "summary": "Create a staff account (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/Credentials" },
+                  {
+                    "type": "object",
+                    "required": ["fullName"],
+                    "properties": { "fullName": { "type": "string" } }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Staff account created" },
+          "403": { "description": "Admin role required" }
+        }
       }
     },
     "/api/auth/login": {

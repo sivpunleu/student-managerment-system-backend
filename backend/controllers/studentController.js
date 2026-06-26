@@ -13,6 +13,18 @@ const {
 const populateDepartment = (query) =>
   query.populate("department", "name description");
 
+const isStudentRole = (req) => req.userRole === "student";
+
+const ensureCanAccessStudent = (req, student) => {
+  if (!isStudentRole(req)) {
+    return;
+  }
+
+  if (student.email !== req.user.email) {
+    throw createHttpError(403, "You can only access your own student profile");
+  }
+};
+
 const ensureDepartmentExists = async (departmentId) => {
   if (!departmentId) {
     return;
@@ -36,12 +48,16 @@ const calculatePercentage = (value, total) =>
 
 const activityFilter = (req, studentId) => ({
   student: studentId,
-  ...(req.user.role === "admin" ? {} : { createdBy: req.user._id }),
+  ...(req.userRole === "admin" ? {} : { createdBy: req.user._id }),
 });
 
 exports.getStudents = async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
   const filter = {};
+
+  if (isStudentRole(req)) {
+    filter.email = req.user.email;
+  }
 
   if (req.query.search) {
     const search = new RegExp(escapeRegex(req.query.search), "i");
@@ -88,6 +104,8 @@ exports.getStudentById = async (req, res) => {
     throw createHttpError(404, "Student not found");
   }
 
+  ensureCanAccessStudent(req, student);
+
   res.json(student);
 };
 
@@ -97,6 +115,8 @@ exports.getStudentOverview = async (req, res) => {
   if (!student) {
     throw createHttpError(404, "Student not found");
   }
+
+  ensureCanAccessStudent(req, student);
 
   const noteFilter = activityFilter(req, student._id);
   const taskFilter = activityFilter(req, student._id);

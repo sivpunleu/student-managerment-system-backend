@@ -8,16 +8,43 @@ const {
 } = require("../utils/validation");
 
 const ownershipFilter = (req) =>
-  req.user.role === "admin" ? {} : { createdBy: req.user._id };
+  req.userRole === "admin" ? {} : { createdBy: req.user._id };
 
-const ensureStudentExists = async (studentId) => {
+const isStudentRole = (req) => req.userRole === "student";
+
+const getCurrentStudentProfile = async (req) => {
+  const student = await Student.findOne({ email: req.user.email }).select("_id");
+
+  if (!student) {
+    throw createHttpError(404, "Student profile not found for this account");
+  }
+
+  return student;
+};
+
+const applyStudentScope = async (req, filter) => {
+  if (!isStudentRole(req)) {
+    return;
+  }
+
+  const student = await getCurrentStudentProfile(req);
+  if (filter.student && filter.student.toString() !== student._id.toString()) {
+    throw createHttpError(403, "You can only access your own student notes");
+  }
+  filter.student = student._id;
+};
+
+const ensureStudentExists = async (req, studentId) => {
   if (!studentId) {
     return;
   }
 
-  const studentExists = await Student.exists({ _id: studentId });
-  if (!studentExists) {
+  const student = await Student.findById(studentId).select("email");
+  if (!student) {
     throw createHttpError(404, "Student not found");
+  }
+  if (isStudentRole(req) && student.email !== req.user.email) {
+    throw createHttpError(403, "You can only link notes to yourself");
   }
 };
 
@@ -28,6 +55,7 @@ exports.getNotes = async (req, res) => {
   if (req.query.student) {
     filter.student = req.query.student;
   }
+  await applyStudentScope(req, filter);
 
   if (req.query.search) {
     const search = new RegExp(escapeRegex(req.query.search), "i");
@@ -77,7 +105,7 @@ exports.createNote = async (req, res) => {
     throw createHttpError(400, "Title and content are required");
   }
 
-  await ensureStudentExists(data.student);
+  await ensureStudentExists(req, data.student);
 
   const note = await Note.create({
     ...data,
@@ -99,7 +127,7 @@ exports.updateNote = async (req, res) => {
     throw createHttpError(400, "No valid fields were provided");
   }
 
-  await ensureStudentExists(updates.student);
+  await ensureStudentExists(req, updates.student);
 
   const note = await Note.findOneAndUpdate(
     { _id: req.params.id, ...ownershipFilter(req) },

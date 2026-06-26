@@ -24,11 +24,12 @@ exports.protect = async (req, res, next) => {
   }
 
   req.user = user;
+  req.userRole = user.role === "user" ? "student" : user.role;
   next();
 };
 
 exports.authorize = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
+  if (!roles.includes(req.userRole)) {
     return res.status(403).json({
       message: "You do not have permission to perform this action",
     });

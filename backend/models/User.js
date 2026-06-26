@@ -24,8 +24,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "user"],
-      default: "user",
+      enum: ["admin", "staff", "student", "user"],
+      default: "student",
     },
     avatarData: {
       type: Buffer,

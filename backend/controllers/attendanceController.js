@@ -36,6 +36,33 @@ const attendanceStatuses = new Set([
   "excused",
 ]);
 
+const isStudentRole = (req) => req.userRole === "student";
+
+const getCurrentStudentProfile = async (req) => {
+  const student = await Student.findOne({ email: req.user.email }).select("_id");
+
+  if (!student) {
+    throw createHttpError(404, "Student profile not found for this account");
+  }
+
+  return student;
+};
+
+const applyStudentScope = async (req, filter) => {
+  if (!isStudentRole(req)) {
+    return null;
+  }
+
+  const student = await getCurrentStudentProfile(req);
+
+  if (filter.student && filter.student.toString() !== student._id.toString()) {
+    throw createHttpError(403, "You can only access your own attendance");
+  }
+
+  filter.student = student._id;
+  return student;
+};
+
 const parseDateRange = (fromValue, toValue) => {
   const from = parseDateOnly(fromValue);
   const to = parseDateOnly(toValue);
@@ -92,6 +119,8 @@ exports.getAttendances = async (req, res) => {
     }
   }
 
+  await applyStudentScope(req, filter);
+
   const [attendances, total] = await Promise.all([
     populateAttendance(
       Attendance.find(filter)
@@ -114,9 +143,10 @@ exports.getAttendances = async (req, res) => {
 };
 
 exports.getAttendanceById = async (req, res) => {
-  const attendance = await populateAttendance(
-    Attendance.findById(req.params.id),
-  );
+  const filter = { _id: req.params.id };
+  await applyStudentScope(req, filter);
+
+  const attendance = await populateAttendance(Attendance.findOne(filter));
 
   if (!attendance) {
     throw createHttpError(404, "Attendance record not found");
@@ -321,12 +351,16 @@ exports.getAttendanceSummary = async (req, res) => {
     throw createHttpError(400, "Date must use YYYY-MM-DD format");
   }
 
+  const filter = { date };
+  const scopedStudent = await applyStudentScope(req, filter);
+  const studentCountFilter = scopedStudent ? { _id: scopedStudent._id } : {};
+
   const [statusRows, totalStudents] = await Promise.all([
     Attendance.aggregate([
-      { $match: { date } },
+      { $match: filter },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]),
-    Student.countDocuments(),
+    Student.countDocuments(studentCountFilter),
   ]);
 
   const counts = createEmptyCounts();
@@ -363,6 +397,8 @@ exports.getAttendanceReport = async (req, res) => {
     }
     match.student = new mongoose.Types.ObjectId(req.query.student);
   }
+
+  await applyStudentScope(req, match);
 
   const rows = await Attendance.aggregate([
     { $match: match },
@@ -420,7 +456,7 @@ exports.getAttendanceReport = async (req, res) => {
   res.json({
     from: formatDateOnly(from),
     to: formatDateOnly(to),
-    student: req.query.student || null,
+    student: match.student?.toString() || null,
     totals,
     totalRecords,
     attendanceRate: calculatePercentage(

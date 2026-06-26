@@ -18,7 +18,8 @@ const shouldRun = process.env.RUN_INTEGRATION_TESTS === "1";
 let server;
 let baseUrl;
 let adminToken;
-let userToken;
+let staffToken;
+let studentToken;
 
 const request = async (path, options = {}) => {
   const response = await fetch(`${baseUrl}${path}`, {
@@ -51,7 +52,7 @@ if (shouldRun) {
     ]);
 
     const password = await bcrypt.hash("Password123", 4);
-    const [admin, user] = await User.create([
+    const [admin, staff, studentUser] = await User.create([
       {
         fullName: "Integration Admin",
         email: "integration-admin@example.com",
@@ -59,10 +60,16 @@ if (shouldRun) {
         role: "admin",
       },
       {
-        fullName: "Integration User",
-        email: "integration-user@example.com",
+        fullName: "Integration Staff",
+        email: "integration-staff@example.com",
         password,
-        role: "user",
+        role: "staff",
+      },
+      {
+        fullName: "Integration Student User",
+        email: "integration-student@example.com",
+        password,
+        role: "student",
       },
     ]);
 
@@ -70,8 +77,12 @@ if (shouldRun) {
       { id: admin._id, role: admin.role },
       process.env.JWT_SECRET,
     );
-    userToken = jwt.sign(
-      { id: user._id, role: user.role },
+    staffToken = jwt.sign(
+      { id: staff._id, role: staff.role },
+      process.env.JWT_SECRET,
+    );
+    studentToken = jwt.sign(
+      { id: studentUser._id, role: studentUser.role },
       process.env.JWT_SECRET,
     );
 
@@ -99,7 +110,8 @@ test(
   { skip: !shouldRun },
   async () => {
     const adminHeaders = { Authorization: `Bearer ${adminToken}` };
-    const userHeaders = { Authorization: `Bearer ${userToken}` };
+    const staffHeaders = { Authorization: `Bearer ${staffToken}` };
+    const studentHeaders = { Authorization: `Bearer ${studentToken}` };
 
     const departmentResult = await request("/api/departments", {
       method: "POST",
@@ -123,7 +135,7 @@ test(
 
     const forbiddenResult = await request("/api/students", {
       method: "POST",
-      headers: userHeaders,
+      headers: staffHeaders,
       body: JSON.stringify(studentPayload),
     });
     assert.equal(forbiddenResult.response.status, 403);
@@ -160,7 +172,7 @@ test(
 
     const summaryResult = await request(
       "/api/attendances/summary?date=2026-06-13",
-      { headers: userHeaders },
+      { headers: staffHeaders },
     );
     assert.equal(summaryResult.response.status, 200);
     assert.equal(summaryResult.body.counts.present, 1);
@@ -218,7 +230,7 @@ test(
 
     const updatedSummaryResult = await request(
       "/api/attendances/summary?date=2026-06-13",
-      { headers: userHeaders },
+      { headers: staffHeaders },
     );
     assert.equal(updatedSummaryResult.body.counts.present, 0);
     assert.equal(updatedSummaryResult.body.counts.late, 1);
@@ -236,21 +248,41 @@ test(
     assert.equal(overviewResult.body.tasks.pending, 1);
     assert.equal(overviewResult.body.tasks.overdue, 1);
 
-    const userOverviewResult = await request(
+    const staffOverviewResult = await request(
       `/api/students/${studentId}/overview`,
-      { headers: userHeaders },
+      { headers: staffHeaders },
     );
-    assert.equal(userOverviewResult.response.status, 200);
-    assert.equal(userOverviewResult.body.notes.total, 0);
-    assert.equal(userOverviewResult.body.tasks.total, 0);
+    assert.equal(staffOverviewResult.response.status, 200);
+    assert.equal(staffOverviewResult.body.notes.total, 0);
+    assert.equal(staffOverviewResult.body.tasks.total, 0);
+
+    const studentOverviewResult = await request(
+      `/api/students/${studentId}/overview`,
+      { headers: studentHeaders },
+    );
+    assert.equal(studentOverviewResult.response.status, 200);
+    assert.equal(studentOverviewResult.body.attendance.totalRecords, 1);
+
+    const blockedStudentOverviewResult = await request(
+      `/api/students/${secondStudentId}/overview`,
+      { headers: studentHeaders },
+    );
+    assert.equal(blockedStudentOverviewResult.response.status, 403);
 
     const reportResult = await request(
       "/api/attendances/report?from=2026-06-13&to=2026-06-14",
-      { headers: userHeaders },
+      { headers: staffHeaders },
     );
     assert.equal(reportResult.response.status, 200);
     assert.equal(reportResult.body.daily.length, 2);
     assert.equal(reportResult.body.totalRecords, 2);
+
+    const studentReportResult = await request(
+      "/api/attendances/report?from=2026-06-13&to=2026-06-14",
+      { headers: studentHeaders },
+    );
+    assert.equal(studentReportResult.response.status, 200);
+    assert.equal(studentReportResult.body.totalRecords, 1);
 
     const blockedStudentDelete = await request(
       `/api/students/${studentId}`,
@@ -321,6 +353,7 @@ test(
     assert.equal(registerResult.response.status, 201);
     assert.ok(registerResult.body.accessToken);
     assert.ok(registerResult.body.refreshToken);
+    assert.equal(registerResult.body.user.role, "student");
 
     const firstAccessToken = registerResult.body.accessToken;
     const firstRefreshToken = registerResult.body.refreshToken;

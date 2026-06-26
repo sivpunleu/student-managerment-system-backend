@@ -19,11 +19,13 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
+const effectiveRole = (user) => (user.role === "user" ? "student" : user.role);
+
 const serializeUser = (user) => ({
   id: user._id,
   fullName: user.fullName,
   email: user.email,
-  role: user.role,
+  role: effectiveRole(user),
   avatarUrl: user.avatarUpdatedAt
     ? `/api/auth/avatar/${user._id}?v=${user.avatarUpdatedAt.getTime()}`
     : null,
@@ -98,7 +100,7 @@ const createAccessToken = (user) =>
   jwt.sign(
     {
       id: user._id,
-      role: user.role,
+      role: effectiveRole(user),
       version: user.tokenVersion || 0,
     },
     process.env.JWT_SECRET,
@@ -164,6 +166,41 @@ exports.register = async (req, res) => {
   res.status(201).json({
     message: "Registration successful",
     ...session,
+  });
+};
+
+exports.createStaff = async (req, res) => {
+  const { fullName, password } = req.body;
+  const email = normalizeEmail(req.body.email);
+
+  if (!isNonEmptyString(fullName) || fullName.trim().length < 2) {
+    throw createHttpError(
+      400,
+      "Full name must contain at least 2 characters",
+    );
+  }
+
+  if (!isValidEmail(email)) {
+    throw createHttpError(400, "A valid email is required");
+  }
+
+  validatePassword(password);
+
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    throw createHttpError(409, "Email already exists");
+  }
+
+  const user = await User.create({
+    fullName: fullName.trim(),
+    email,
+    password: await bcrypt.hash(password, 12),
+    role: "staff",
+  });
+
+  res.status(201).json({
+    message: "Staff account created",
+    user: serializeUser(user),
   });
 };
 

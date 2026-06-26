@@ -56,6 +56,24 @@ test("registration validates input before accessing the database", async () => {
   });
 });
 
+test("staff creation requires an admin token", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/auth/staff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Staff User",
+        email: "staff@example.com",
+        password: "password123",
+      }),
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 401);
+    assert.equal(body.message, "Authentication token is required");
+  });
+});
+
 test("unknown routes return a JSON 404 response", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/unknown`);

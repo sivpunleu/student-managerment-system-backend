@@ -8,16 +8,43 @@ const {
 } = require("../utils/validation");
 
 const ownershipFilter = (req) =>
-  req.user.role === "admin" ? {} : { createdBy: req.user._id };
+  req.userRole === "admin" ? {} : { createdBy: req.user._id };
 
-const ensureStudentExists = async (studentId) => {
+const isStudentRole = (req) => req.userRole === "student";
+
+const getCurrentStudentProfile = async (req) => {
+  const student = await Student.findOne({ email: req.user.email }).select("_id");
+
+  if (!student) {
+    throw createHttpError(404, "Student profile not found for this account");
+  }
+
+  return student;
+};
+
+const applyStudentScope = async (req, filter) => {
+  if (!isStudentRole(req)) {
+    return;
+  }
+
+  const student = await getCurrentStudentProfile(req);
+  if (filter.student && filter.student.toString() !== student._id.toString()) {
+    throw createHttpError(403, "You can only access your own student tasks");
+  }
+  filter.student = student._id;
+};
+
+const ensureStudentExists = async (req, studentId) => {
   if (!studentId) {
     return;
   }
 
-  const studentExists = await Student.exists({ _id: studentId });
-  if (!studentExists) {
+  const student = await Student.findById(studentId).select("email");
+  if (!student) {
     throw createHttpError(404, "Student not found");
+  }
+  if (isStudentRole(req) && student.email !== req.user.email) {
+    throw createHttpError(403, "You can only link tasks to yourself");
   }
 };
 
@@ -41,6 +68,7 @@ exports.getTasks = async (req, res) => {
   if (req.query.student) {
     filter.student = req.query.student;
   }
+  await applyStudentScope(req, filter);
 
   if (req.query.status) {
     filter.status = req.query.status;
@@ -109,7 +137,7 @@ exports.createTask = async (req, res) => {
     data.dueDate = parseOptionalDate(data.dueDate);
   }
 
-  await ensureStudentExists(data.student);
+  await ensureStudentExists(req, data.student);
 
   const task = await Task.create({
     ...data,
@@ -142,7 +170,7 @@ exports.updateTask = async (req, res) => {
     updates.dueDate = parseOptionalDate(updates.dueDate);
   }
 
-  await ensureStudentExists(updates.student);
+  await ensureStudentExists(req, updates.student);
 
   const task = await Task.findOneAndUpdate(
     { _id: req.params.id, ...ownershipFilter(req) },

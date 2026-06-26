@@ -19,9 +19,9 @@ router.get("/", getAttendances);
 router.get("/summary", getAttendanceSummary);
 router.get("/report", getAttendanceReport);
 router.get("/:id", getAttendanceById);
-router.post("/bulk", authorize("admin"), bulkUpsertAttendance);
-router.post("/", authorize("admin"), createAttendance);
-router.put("/:id", authorize("admin"), updateAttendance);
-router.delete("/:id", authorize("admin"), deleteAttendance);
+router.post("/bulk", authorize("admin", "staff"), bulkUpsertAttendance);
+router.post("/", authorize("admin", "staff"), createAttendance);
+router.put("/:id", authorize("admin", "staff"), updateAttendance);
+router.delete("/:id", authorize("admin", "staff"), deleteAttendance);
 
 module.exports = router;
